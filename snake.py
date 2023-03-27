@@ -91,10 +91,10 @@ if __name__ == "__main__":
         # Lister for events.
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running = False
+                running = False   
 
-            if event.type != pygame.KEYDOWN:
-                continue
+            if event.type != pygame.KEYDOWN or event.key not in key_map:
+                continue   
             
             # Check for keyboard input.
             snake.change_direction(key_map[event.key])
@@ -104,8 +104,7 @@ if __name__ == "__main__":
         time_since_last_move = current_time - last_move_time
         if time_since_last_move >= move_interval:
             snake.move()
-            last_move_time = current_time
-        
+            last_move_time = current_time 
         # Check if snake ate food.
         if snake.snakeArr[-1] == food.food_pos:
             food.changePos(random.randint(1, 21) * 30, random.randint(1, 21) * 30 + top_margin)

@@ -132,8 +132,8 @@ if __name__ == "__main__":
         window.fill('white')
         window.blit(background, (0, top_margin))
         window.blit(text, (20, 20))
-        food.draw()
         snake.draw()
+        food.draw()
 
         pygame.display.flip()
         clock.tick(60) # Limit the framerate to 60.

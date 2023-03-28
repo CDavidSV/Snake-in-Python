@@ -73,7 +73,7 @@ class Snake:
             "LEFT_LAST": images[0],
             "UP": images[7],
             "UP_FIRST": images[6],
-            "UP_LAST": images[8],
+            "UP_LAST": images[9],
             "DOWN": images[10],
             "DOWN_FIRST": images[9],
             "DOWN_LAST": images[6],

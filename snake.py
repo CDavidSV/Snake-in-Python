@@ -11,7 +11,6 @@ clock = pygame.time.Clock()
 background = pygame.image.load('assets/background_image.png').convert()
 font = pygame.font.Font('assets/Fixedsys.ttf', 28)
 background = pygame.transform.scale(background, (window_width, window_height - top_margin))
-length_increment = 1
 key_map = {119: "UP", 115: "DOWN", 97: "LEFT", 100: "RIGHT"}
 images = [pygame.image.load('assets/first-car-right.png').convert_alpha(), #0
           pygame.image.load('assets/mid-car-right.png').convert_alpha(), #1
@@ -30,13 +29,37 @@ images = [pygame.image.load('assets/first-car-right.png').convert_alpha(), #0
 # set the window title
 pygame.display.set_caption("Snake Game")
 
+def update_high_score(high_score, score):
+    if score < high_score:
+        return high_score
+
+    with open('high_score.txt', "w") as f:
+        f.write(str(score))
+
+    return score
+
+def check_high_score():
+    try:
+        with open('high_score.txt', "r") as f:
+            high_score = f.read().strip()
+            if high_score.isdigit():
+                return int(high_score)
+
+        with open('high_score.txt', "w") as f:
+            f.write('0')
+        return 0
+    except IOError:
+        with open('high_score.txt', "w") as f:
+            f.write('0')
+        return 0
+
 class Snake:
     def __init__(self, size):
         self.size = size
         self.snake_arr = [pygame.Vector2(300 - 60, 300 + top_margin), pygame.Vector2(300 - 30, 300 + top_margin), pygame.Vector2(300, 300 + top_margin)]
         self.snake_images = [{"pos": pygame.Vector2(size, 0), "img": images[4]}, {"pos": pygame.Vector2(size, 0), "img": images[1]}, {"pos": pygame.Vector2(size, 0), "img": images[0]}]
         self.length = len(self.snake_arr)
-        self.direction = pygame.Vector2(0, 0)
+        self.direction = pygame.Vector2(size, 0)
         self.direction_update = pygame.Vector2(0, 0)
         self.direction_queue = []
         self.directions = {"UP": pygame.Vector2(0, -size), "DOWN": pygame.Vector2(0, size), "LEFT": pygame.Vector2(-size, 0), "RIGHT": pygame.Vector2(size, 0)}
@@ -144,7 +167,9 @@ if __name__ == "__main__":
     food = Food(30, random.randint(1, 21) * 30, random.randint(1, 21) * 30 + top_margin)
     move_interval = 100
     score = 0
-    text = font.render(f'Score: {score}', True, 'blue')
+    high_score = check_high_score()
+    score_text = font.render(f'Score: {score}', True, 'blue')
+    high_score_text = font.render(f'High Score: {high_score}', True, 'orange')
 
     last_move_time = pygame.time.get_ticks()
     running = True
@@ -152,7 +177,7 @@ if __name__ == "__main__":
         # Lister for events.
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running = False   
+                running = False
 
             if event.type != pygame.KEYDOWN or event.key not in key_map:
                 continue   
@@ -170,9 +195,9 @@ if __name__ == "__main__":
         # Check if snake ate food.
         if snake.snake_arr[-1] == food.food_pos:
             food.changePos(random.randint(1, 21) * 30, random.randint(1, 21) * 30 + top_margin)
-            snake.increase_length(length_increment)
+            snake.increase_length(1)
             score += 1
-            text = font.render(f'Score: {score}', True, 'blue')
+            score_text = font.render(f'Score: {score}', True, 'blue')
 
         # Check if the snake is out of bounds.
         if snake.snake_arr[-1].x > window_width - snake.size:
@@ -187,16 +212,19 @@ if __name__ == "__main__":
         # Check if the snake collided with itself.
         if snake.collided:
             running = False
+            high_score = update_high_score(high_score, score)
+            high_score_text = font.render(f'High Score: {high_score}', True, 'orange')
             break
         
         # Display updates
         window.fill('white')
         window.blit(background, (0, top_margin))
-        window.blit(text, (20, 20))
+        window.blit(high_score_text, (200, 20))
+        window.blit(score_text, (20, 20))
         snake.draw()
         food.draw()
 
         pygame.display.flip()
-        clock.tick(300) # Limit the framerate to 60.
+        clock.tick(300) # Limit the framerate to 300.
 
     pygame.quit()

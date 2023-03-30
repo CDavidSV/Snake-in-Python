@@ -3,20 +3,23 @@ from random import randint
 import pygame
 
 # Initialize pygame
-window_width = 630
-window_height = 696
-top_margin = 66
+WINDOW_WIDTH = 630
+WINDOW_HEIGHT = 696
+TOP_MARGIN = 66
 pygame.init()
-window = pygame.display.set_mode((window_width, window_height))
+window = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 clock = pygame.time.Clock()
 
 # Other variables
-overlay = pygame.Surface([window_width, window_height], pygame.SRCALPHA, 32)
+HIGH_SCORE_FILE = 'high_score.txt'
+overlay = pygame.Surface([WINDOW_WIDTH, WINDOW_HEIGHT], pygame.SRCALPHA, 32)
 overlay = overlay.convert_alpha()
 overlay.fill((0, 0, 0, 200))
-background = pygame.image.load('assets/backgrounds/background_image_1.png').convert()
-background = pygame.transform.scale(background, (window_width, window_height - top_margin))
+replay_btn = pygame.image.load('assets/buttons/replay_btn.png').convert_alpha()
+background = pygame.image.load('assets/background_image_1.png').convert()
+passenger = pygame.image.load('assets/passenger.png').convert_alpha()
 font = pygame.font.Font('assets/fonts/Fixedsys.ttf', 28)
+final_font = pygame.font.Font('assets/fonts/Fixedsys.ttf', 128)
 controls_map = {pygame.K_w: "UP", pygame.K_s: "DOWN", pygame.K_a: "LEFT", pygame.K_d: "RIGHT", pygame.K_UP: "UP", pygame.K_DOWN: "DOWN", pygame.K_LEFT: "LEFT", pygame.K_RIGHT: "RIGHT"}
 images = [pygame.image.load('assets/train_car_imgs/first-car-right.png').convert_alpha(), #0
           pygame.image.load('assets/train_car_imgs/mid-car-right.png').convert_alpha(), #1
@@ -43,7 +46,7 @@ class Snake:
         self.size = size
         self.init_pos_x = init_pos_x
         self.init_pos_y = init_pos_y
-        self.snake_arr = deque([pygame.Vector2(init_pos_x, init_pos_y + top_margin), pygame.Vector2(init_pos_x - size, init_pos_y + top_margin), pygame.Vector2(init_pos_x - size * 2, init_pos_y + top_margin) ])
+        self.snake_arr = deque([pygame.Vector2(init_pos_x, init_pos_y + TOP_MARGIN), pygame.Vector2(init_pos_x - size, init_pos_y + TOP_MARGIN), pygame.Vector2(init_pos_x - size * 2, init_pos_y + TOP_MARGIN)])
         self.snake_images = deque([{"dir": pygame.Vector2(size, 0), "img": images[0]}, {"dir": pygame.Vector2(size, 0), "img": images[1]}, {"dir": pygame.Vector2(size, 0), "img": images[4]}])
         self.direction = pygame.Vector2(size, 0)
         self.direction_update = pygame.Vector2(size, 0)
@@ -97,7 +100,7 @@ class Snake:
         self.direction_queue = deque([])
         self.length = 3
         self.collided = False
-        self.snake_arr = deque([pygame.Vector2(self.init_pos_x, self.init_pos_y + top_margin), pygame.Vector2(self.init_pos_x - self.size, self.init_pos_y + top_margin), pygame.Vector2(self.init_pos_x - self.size * 2, self.init_pos_y + top_margin) ])
+        self.snake_arr = deque([pygame.Vector2(self.init_pos_x, self.init_pos_y + TOP_MARGIN), pygame.Vector2(self.init_pos_x - self.size, self.init_pos_y + TOP_MARGIN), pygame.Vector2(self.init_pos_x - self.size * 2, self.init_pos_y + TOP_MARGIN) ])
         self.snake_images = deque([{"dir": pygame.Vector2(self.size, 0), "img": images[0]}, {"dir": pygame.Vector2(self.size, 0), "img": images[1]}, {"dir": pygame.Vector2(self.size, 0), "img": images[4]}])
 
     def increase_length(self):
@@ -148,38 +151,36 @@ class Food:
         self.food_pos = pygame.Vector2(x - self.size, y - self.size)
     
     def draw(self):
-        pygame.draw.rect(window, 'red', pygame.Rect(self.food_pos.x, self.food_pos.y, self.size, self.size))
+        #pygame.draw.rect(window, 'red', pygame.Rect(self.food_pos.x, self.food_pos.y, self.size, self.size))
+        window.blit(passenger, pygame.Rect(self.food_pos.x, self.food_pos.y, self.size, self.size))
 
 def update_high_score(high_score, score):
     if score < high_score:
         return high_score
 
-    with open('high_score.txt', "w") as f:
+    with open(HIGH_SCORE_FILE, "w") as f:
         f.write(str(score))
 
     return score
 
 def check_high_score():
     try:
-        with open('high_score.txt', "r") as f:
+        with open(HIGH_SCORE_FILE, "r") as f:
             high_score = f.read().strip()
             if high_score.isdigit():
                 return int(high_score)
 
-        with open('high_score.txt', "w") as f:
+        with open(HIGH_SCORE_FILE, "w") as f:
             f.write('0')
         return 0
     except IOError:
-        with open('high_score.txt', "w") as f:
+        with open(HIGH_SCORE_FILE, "w") as f:
             f.write('0')
         return 0
 
-def update_scores():
-    return
-
 if __name__ == "__main__":
     snake = Snake(30, 300, 300)
-    food = Food(30, randint(1, 21) * 30, randint(1, 21) * 30 + top_margin)
+    food = Food(30, randint(1, 21) * 30, randint(1, 21) * 30 + TOP_MARGIN)
     move_interval = 100
     score = 0
     high_score = check_high_score()
@@ -188,65 +189,69 @@ if __name__ == "__main__":
 
     last_move_time = pygame.time.get_ticks()
     running = True
-    stopped = True
+    started = False
     lost = False
     while running:
         # Lister for events.
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-
-            if event.type == pygame.KEYDOWN and event.key in controls_map and not lost:
+            elif event.type == pygame.KEYDOWN and event.key in controls_map and not lost:
                 snake.change_direction(controls_map[event.key])
-                stopped = False
-            
-            if event.type == pygame.MOUSEBUTTONUP and lost:
+                started = True  
+            elif event.type == pygame.MOUSEBUTTONUP and lost:
                 lost = False
+                started = False
+                score = 0
                 score_text = font.render(f'Score: {score}', True, 'blue')
                 snake.reset()
 
         # Check if it's time to move the player
         current_time = pygame.time.get_ticks()
         time_since_last_move = current_time - last_move_time
-        if time_since_last_move >= move_interval and not stopped:
+        if time_since_last_move >= move_interval and started:
             snake.move()
             last_move_time = current_time
 
         # Check if snake ate food.
         if snake.snake_arr[0] == food.food_pos:
-            food.changePos(randint(1, 21) * 30, randint(1, 21) * 30 + top_margin)
+            food.changePos(randint(1, 21) * 30, randint(1, 21) * 30 + TOP_MARGIN)
             snake.increase_length()
             score += 1
+            if score >= high_score:
+                high_score = score
             score_text = font.render(f'Score: {score}', True, 'blue')
+            high_score_text = font.render(f'High Score: {high_score}', True, 'orange')
 
         # Check if the snake is out of bounds.
-        if snake.snake_arr[0].x > window_width - snake.size:
+        if snake.snake_arr[0].x > WINDOW_WIDTH - snake.size:
             snake.snake_arr[0].x = 0
         elif snake.snake_arr[0].x < 0:
-            snake.snake_arr[0].x = window_width - snake.size
-        if snake.snake_arr[0].y > window_height - snake.size:
-            snake.snake_arr[0].y = 0 + top_margin
-        elif snake.snake_arr[0].y < top_margin:
-            snake.snake_arr[0].y = window_height - snake.size
+            snake.snake_arr[0].x = WINDOW_WIDTH - snake.size
+        if snake.snake_arr[0].y > WINDOW_HEIGHT - snake.size:
+            snake.snake_arr[0].y = 0 + TOP_MARGIN
+        elif snake.snake_arr[0].y < TOP_MARGIN:
+            snake.snake_arr[0].y = WINDOW_HEIGHT - snake.size
 
         # Check if the snake collided with itself.
         if snake.collided:
-            stopped = True
+            started = True
             lost = True
             high_score = update_high_score(high_score, score)
-            score = 0
-            high_score_text = font.render(f'High Score: {high_score}', True, 'orange')
-            
+        
         # Display updates
         window.fill('white')
-        window.blit(background, (0, top_margin))
+        window.blit(background, (0, TOP_MARGIN))
         window.blit(high_score_text, (200, 20))
         window.blit(score_text, (20, 20))
         snake.draw()
         food.draw()
 
         if lost:
+            final_score = final_font.render(f'{score}', True, 'blue')
             window.blit(overlay, (0, 0))
+            window.blit(replay_btn, (WINDOW_WIDTH / 2 - replay_btn.get_width() / 2, WINDOW_HEIGHT / 2))
+            window.blit(final_score, final_score.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 - 125)))
 
         pygame.display.flip()
     pygame.quit()

@@ -21,6 +21,7 @@ passenger = pygame.image.load('assets/passenger.png').convert_alpha()
 font = pygame.font.Font('assets/fonts/Fixedsys.ttf', 28)
 final_font = pygame.font.Font('assets/fonts/Fixedsys.ttf', 128)
 controls_map = {pygame.K_w: "UP", pygame.K_s: "DOWN", pygame.K_a: "LEFT", pygame.K_d: "RIGHT", pygame.K_UP: "UP", pygame.K_DOWN: "DOWN", pygame.K_LEFT: "LEFT", pygame.K_RIGHT: "RIGHT"}
+game_state = "stopped"
 images = [pygame.image.load('assets/train_car_imgs/first-car-right.png').convert_alpha(), #0
           pygame.image.load('assets/train_car_imgs/mid-car-right.png').convert_alpha(), #1
           pygame.image.load('assets/train_car_imgs/turn-car-right-up.png').convert_alpha(), #2
@@ -189,19 +190,17 @@ if __name__ == "__main__":
 
     last_move_time = pygame.time.get_ticks()
     running = True
-    started = False
-    lost = False
     while running:
         # Lister for events.
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            elif event.type == pygame.KEYDOWN and event.key in controls_map and not lost:
+            elif event.type == pygame.KEYDOWN and event.key in controls_map and game_state != "lost":
+                game_state = "started"
                 snake.change_direction(controls_map[event.key])
                 started = True  
-            elif event.type == pygame.MOUSEBUTTONUP and lost:
-                lost = False
-                started = False
+            elif event.type == pygame.MOUSEBUTTONUP and game_state == "lost":
+                game_state = "stopped"
                 score = 0
                 score_text = font.render(f'Score: {score}', True, 'blue')
                 snake.reset()
@@ -209,7 +208,7 @@ if __name__ == "__main__":
         # Check if it's time to move the player
         current_time = pygame.time.get_ticks()
         time_since_last_move = current_time - last_move_time
-        if time_since_last_move >= move_interval and started:
+        if time_since_last_move >= move_interval and game_state == "started":
             snake.move()
             last_move_time = current_time
 
@@ -235,8 +234,7 @@ if __name__ == "__main__":
 
         # Check if the snake collided with itself.
         if snake.collided:
-            started = True
-            lost = True
+            game_state = "lost"
             high_score = update_high_score(high_score, score)
         
         # Display updates
@@ -247,7 +245,7 @@ if __name__ == "__main__":
         snake.draw()
         food.draw()
 
-        if lost:
+        if game_state == "lost":
             final_score = final_font.render(f'{score}', True, 'blue')
             window.blit(overlay, (0, 0))
             window.blit(replay_btn, (WINDOW_WIDTH / 2 - replay_btn.get_width() / 2, WINDOW_HEIGHT / 2))

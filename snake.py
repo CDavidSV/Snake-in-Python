@@ -1,5 +1,5 @@
 from collections import deque
-from random import randint, choice
+from random import choice
 import pygame
 
 # Initialize pygame
@@ -143,18 +143,24 @@ class Food:
         self.size = size
         self.posX = x
         self.posY = y
-        self.food_pos = pygame.Vector2(self.posX - self.size, self.posY - self.size)
+        self.food_pos = pygame.Vector2(self.posX, self.posY)
 
     def changePos(self, x, y):
-        self.food_pos = pygame.Vector2(x - self.size, y - self.size)
+        self.food_pos = pygame.Vector2(x, y)
     
     def draw(self):
         #pygame.draw.rect(window, 'red', pygame.Rect(self.food_pos.x, self.food_pos.y, self.size, self.size))
         window.blit(passenger, pygame.Rect(self.food_pos.x, self.food_pos.y, self.size, self.size))
 
 def random_pos(start, end, skip=1, exclude=[]):
-    available_positions = set(range(start, end)) - set(exclude)
-    return choice(list(available_positions)) * skip
+    unoccupied_positions = []
+
+    for x in range(start, end):
+        for y in range(start, end):
+            position = pygame.Vector2(x * skip, y * skip + TOP_MARGIN)
+            if position not in exclude:
+                unoccupied_positions.append(position)
+    return choice(unoccupied_positions)
 
 def update_high_score(high_score, score):
     if score < high_score:
@@ -171,7 +177,7 @@ def check_high_score():
             high_score = f.read().strip()
             if high_score.isdigit():
                 return int(high_score)
-
+            
         with open(HIGH_SCORE_FILE, "w") as f:
             f.write('0')
         return 0
@@ -182,7 +188,8 @@ def check_high_score():
 
 if __name__ == "__main__":
     snake = Snake(30, 300, 300)
-    food = Food(30, random_pos(1, 21, 30), random_pos(1, 21, 30) + TOP_MARGIN)
+    random_food_pos = random_pos(1, 20, 30, snake.snake_arr)
+    food = Food(30, random_food_pos.x, random_food_pos.y)
     move_interval = 100
     score = 0
     high_score = check_high_score()
@@ -215,7 +222,8 @@ if __name__ == "__main__":
 
         # Check if snake ate food.
         if snake.snake_arr[0] == food.food_pos:
-            food.changePos(random_pos(1, 21, 30), random_pos(1, 21, 30) + TOP_MARGIN)
+            random_food_pos = random_pos(1, 21, 30, snake.snake_arr)
+            food.changePos(random_food_pos.x, random_food_pos.y)
             snake.increase_length()
             score += 1
             if score >= high_score:

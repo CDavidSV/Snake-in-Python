@@ -11,6 +11,9 @@ window = pygame.display.set_mode((window_width, window_height))
 clock = pygame.time.Clock()
 
 # Other variables
+overlay = pygame.Surface([window_width, window_height], pygame.SRCALPHA, 32)
+overlay = overlay.convert_alpha()
+overlay.fill((0, 0, 0, 200))
 background = pygame.image.load('assets/backgrounds/background_image_1.png').convert()
 background = pygame.transform.scale(background, (window_width, window_height - top_margin))
 font = pygame.font.Font('assets/fonts/Fixedsys.ttf', 28)
@@ -32,36 +35,14 @@ images = [pygame.image.load('assets/train_car_imgs/first-car-right.png').convert
 # set the window title
 pygame.display.set_caption("Snake Game")
 
-def update_high_score(high_score, score):
-    if score < high_score:
-        return high_score
-
-    with open('high_score.txt', "w") as f:
-        f.write(str(score))
-
-    return score
-
-def check_high_score():
-    try:
-        with open('high_score.txt', "r") as f:
-            high_score = f.read().strip()
-            if high_score.isdigit():
-                return int(high_score)
-
-        with open('high_score.txt', "w") as f:
-            f.write('0')
-        return 0
-    except IOError:
-        with open('high_score.txt', "w") as f:
-            f.write('0')
-        return 0
-
 class Snake:
     collided = False
     direction_queue = deque([])
     length = 3
     def __init__(self, size, init_pos_x, init_pos_y):
         self.size = size
+        self.init_pos_x = init_pos_x
+        self.init_pos_y = init_pos_y
         self.snake_arr = deque([pygame.Vector2(init_pos_x, init_pos_y + top_margin), pygame.Vector2(init_pos_x - size, init_pos_y + top_margin), pygame.Vector2(init_pos_x - size * 2, init_pos_y + top_margin) ])
         self.snake_images = deque([{"dir": pygame.Vector2(size, 0), "img": images[0]}, {"dir": pygame.Vector2(size, 0), "img": images[1]}, {"dir": pygame.Vector2(size, 0), "img": images[4]}])
         self.direction = pygame.Vector2(size, 0)
@@ -110,6 +91,15 @@ class Snake:
             self.direction_queue.append(directions[direction])
             self.direction_update = directions[direction]
 
+    def reset(self):
+        self.direction = pygame.Vector2(self.size, 0)
+        self.direction_update = pygame.Vector2(self.size, 0)
+        self.direction_queue = deque([])
+        self.length = 3
+        self.collided = False
+        self.snake_arr = deque([pygame.Vector2(self.init_pos_x, self.init_pos_y + top_margin), pygame.Vector2(self.init_pos_x - self.size, self.init_pos_y + top_margin), pygame.Vector2(self.init_pos_x - self.size * 2, self.init_pos_y + top_margin) ])
+        self.snake_images = deque([{"dir": pygame.Vector2(self.size, 0), "img": images[0]}, {"dir": pygame.Vector2(self.size, 0), "img": images[1]}, {"dir": pygame.Vector2(self.size, 0), "img": images[4]}])
+
     def increase_length(self):
         self.length += 1
 
@@ -151,11 +141,41 @@ class Food:
         self.posY = y
         self.food_pos = pygame.Vector2(self.posX - self.size, self.posY - self.size)
 
+    def randomPos():
+        return
+
     def changePos(self, x, y):
         self.food_pos = pygame.Vector2(x - self.size, y - self.size)
     
     def draw(self):
         pygame.draw.rect(window, 'red', pygame.Rect(self.food_pos.x, self.food_pos.y, self.size, self.size))
+
+def update_high_score(high_score, score):
+    if score < high_score:
+        return high_score
+
+    with open('high_score.txt', "w") as f:
+        f.write(str(score))
+
+    return score
+
+def check_high_score():
+    try:
+        with open('high_score.txt', "r") as f:
+            high_score = f.read().strip()
+            if high_score.isdigit():
+                return int(high_score)
+
+        with open('high_score.txt', "w") as f:
+            f.write('0')
+        return 0
+    except IOError:
+        with open('high_score.txt', "w") as f:
+            f.write('0')
+        return 0
+
+def update_scores():
+    return
 
 if __name__ == "__main__":
     snake = Snake(30, 300, 300)
@@ -179,6 +199,11 @@ if __name__ == "__main__":
             if event.type == pygame.KEYDOWN and event.key in controls_map and not lost:
                 snake.change_direction(controls_map[event.key])
                 stopped = False
+            
+            if event.type == pygame.MOUSEBUTTONUP and lost:
+                lost = False
+                score_text = font.render(f'Score: {score}', True, 'blue')
+                snake.reset()
 
         # Check if it's time to move the player
         current_time = pygame.time.get_ticks()
@@ -209,7 +234,8 @@ if __name__ == "__main__":
             stopped = True
             lost = True
             high_score = update_high_score(high_score, score)
-            break
+            score = 0
+            high_score_text = font.render(f'High Score: {high_score}', True, 'orange')
             
         # Display updates
         window.fill('white')
@@ -218,6 +244,9 @@ if __name__ == "__main__":
         window.blit(score_text, (20, 20))
         snake.draw()
         food.draw()
+
+        if lost:
+            window.blit(overlay, (0, 0))
 
         pygame.display.flip()
     pygame.quit()

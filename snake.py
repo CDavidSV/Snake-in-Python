@@ -112,8 +112,21 @@ class Snake:
             self.direction = self.direction_queue[0]
             self.direction_queue.popleft()
 
+        # Check if the snake is out of bounds.
+        new_head = self.snake_arr[0].copy()
+
         # Generate the new snake head in its corresponding position based on the direction.
-        new_head = self.snake_arr[0] + self.direction
+        new_head += self.direction
+        
+        if self.snake_arr[0].x >= WINDOW_WIDTH - self.size and self.direction.x > 0:
+            new_head.x = 0
+        elif self.snake_arr[0].x <= 0 and self.direction.x < 0:
+            new_head.x = WINDOW_WIDTH - self.size
+        if self.snake_arr[0].y >= WINDOW_HEIGHT - self.size and self.direction.y > 0:
+            new_head.y = 0 + TOP_MARGIN
+        elif self.snake_arr[0].y < TOP_MARGIN + self.size and self.direction.y < 0:
+            new_head.y = WINDOW_HEIGHT - self.size
+
         if new_head in self.snake_arr:
             self.collided = True # Check if the snake collided with itself.
             return
@@ -190,7 +203,7 @@ if __name__ == "__main__":
     snake = Snake(30, 300, 300)
     random_food_pos = random_pos(1, 20, 30, snake.snake_arr)
     food = Food(30, random_food_pos.x, random_food_pos.y)
-    move_interval = 100
+    move_interval = 100 # Speed
     score = 0
     high_score = check_high_score()
     score_text = font.render(f'Score: {score}', True, 'blue')
@@ -198,6 +211,7 @@ if __name__ == "__main__":
 
     last_move_time = pygame.time.get_ticks()
     running = True
+
     while running:
         # Lister for events.
         for event in pygame.event.get():
@@ -230,16 +244,6 @@ if __name__ == "__main__":
                 high_score = score
             score_text = font.render(f'Score: {score}', True, 'blue')
             high_score_text = font.render(f'High Score: {high_score}', True, 'orange')
-
-        # Check if the snake is out of bounds.
-        if snake.snake_arr[0].x > WINDOW_WIDTH - snake.size:
-            snake.snake_arr[0].x = 0
-        elif snake.snake_arr[0].x < 0:
-            snake.snake_arr[0].x = WINDOW_WIDTH - snake.size
-        if snake.snake_arr[0].y > WINDOW_HEIGHT - snake.size:
-            snake.snake_arr[0].y = 0 + TOP_MARGIN
-        elif snake.snake_arr[0].y < TOP_MARGIN:
-            snake.snake_arr[0].y = WINDOW_HEIGHT - snake.size
 
         # Check if the snake collided with itself.
         if snake.collided:

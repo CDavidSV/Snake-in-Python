@@ -5,9 +5,11 @@ import pygame
 # Initialize pygame
 WINDOW_WIDTH = 630
 WINDOW_HEIGHT = 696
+DISPLAY_SCALE = 1.2
 TOP_MARGIN = 66
 pygame.init()
-window = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
+game_surface = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT))
+window = pygame.display.set_mode((int(WINDOW_WIDTH * DISPLAY_SCALE), int(WINDOW_HEIGHT * DISPLAY_SCALE)))
 clock = pygame.time.Clock()
 
 # Other variables
@@ -76,19 +78,19 @@ class Snake:
 
     def check_direction(self, direction):
         directions = {(0, -self.size): "UP",
-                      (0, self.size): "DOWN", 
-                      (-self.size, 0): "LEFT", 
+                      (0, self.size): "DOWN",
+                      (-self.size, 0): "LEFT",
                       (self.size, 0): "RIGHT",
                       }
         return directions[tuple(direction)]
 
     def change_direction(self, direction):
-        directions = {"UP": pygame.Vector2(0, -self.size), 
-                      "DOWN": pygame.Vector2(0, self.size), 
-                      "LEFT": pygame.Vector2(-self.size, 0), 
+        directions = {"UP": pygame.Vector2(0, -self.size),
+                      "DOWN": pygame.Vector2(0, self.size),
+                      "LEFT": pygame.Vector2(-self.size, 0),
                       "RIGHT": pygame.Vector2(self.size, 0)
                       }
-        
+
         # Check if the directions is opposite to the current snake direction.
         direction = direction.upper()
         if directions[direction] != -self.direction_update and direction not in self.direction_queue:
@@ -117,7 +119,7 @@ class Snake:
 
         # Generate the new snake head in its corresponding position based on the direction.
         new_head += self.direction
-        
+
         if self.snake_arr[0].x >= WINDOW_WIDTH - self.size and self.direction.x > 0:
             new_head.x = 0
         elif self.snake_arr[0].x <= 0 and self.direction.x < 0:
@@ -149,7 +151,7 @@ class Snake:
 
     def draw(self):
         for body, image in zip(self.snake_arr, self.snake_images):
-            window.blit(image["img"], (body.x, body.y))
+            game_surface.blit(image["img"], (body.x, body.y))
 
 class Food:
     def __init__(self, size, x , y):
@@ -160,10 +162,10 @@ class Food:
 
     def changePos(self, x, y):
         self.food_pos = pygame.Vector2(x, y)
-    
+
     def draw(self):
-        #pygame.draw.rect(window, 'red', pygame.Rect(self.food_pos.x, self.food_pos.y, self.size, self.size))
-        window.blit(passenger, pygame.Rect(self.food_pos.x, self.food_pos.y, self.size, self.size))
+        #pygame.draw.rect(game_surface, 'red', pygame.Rect(self.food_pos.x, self.food_pos.y, self.size, self.size))
+        game_surface.blit(passenger, pygame.Rect(self.food_pos.x, self.food_pos.y, self.size, self.size))
 
 def random_pos(start, end, skip=1, exclude=[]):
     unoccupied_positions = []
@@ -190,7 +192,7 @@ def check_high_score():
             high_score = f.read().strip()
             if high_score.isdigit():
                 return int(high_score)
-            
+
         with open(HIGH_SCORE_FILE, "w") as f:
             f.write('0')
         return 0
@@ -220,7 +222,7 @@ if __name__ == "__main__":
             elif event.type == pygame.KEYDOWN and event.key in controls_map and game_state != "lost":
                 game_state = "started"
                 snake.change_direction(controls_map[event.key])
-                started = True  
+                started = True
             elif event.type == pygame.MOUSEBUTTONUP and game_state == "lost":
                 game_state = "stopped"
                 score = 0
@@ -249,20 +251,23 @@ if __name__ == "__main__":
         if snake.collided:
             game_state = "lost"
             high_score = update_high_score(high_score, score)
-        
+
         # Display updates
-        window.fill('white')
-        window.blit(background, (0, TOP_MARGIN))
-        window.blit(high_score_text, (200, 20))
-        window.blit(score_text, (20, 20))
+        game_surface.fill('white')
+        game_surface.blit(background, (0, TOP_MARGIN))
+        game_surface.blit(high_score_text, (200, 20))
+        game_surface.blit(score_text, (20, 20))
         snake.draw()
         food.draw()
 
         if game_state == "lost":
             final_score = final_font.render(f'{score}', True, 'blue')
-            window.blit(overlay, (0, 0))
-            window.blit(replay_btn, (WINDOW_WIDTH / 2 - replay_btn.get_width() / 2, WINDOW_HEIGHT / 2))
-            window.blit(final_score, final_score.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 - 125)))
+            game_surface.blit(overlay, (0, 0))
+            game_surface.blit(replay_btn, (WINDOW_WIDTH / 2 - replay_btn.get_width() / 2, WINDOW_HEIGHT / 2))
+            game_surface.blit(final_score, final_score.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 - 125)))
 
+        # Scale the game surface to the display window
+        scaled_surface = pygame.transform.scale(game_surface, (int(WINDOW_WIDTH * DISPLAY_SCALE), int(WINDOW_HEIGHT * DISPLAY_SCALE)))
+        window.blit(scaled_surface, (0, 0))
         pygame.display.flip()
     pygame.quit()

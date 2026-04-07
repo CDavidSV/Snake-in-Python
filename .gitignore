@@ -1,1 +1,6 @@
 high_score.txt
+dist
+build
+snake.spec
+__pycache__
+.DS_Store

@@ -1,10 +1,19 @@
 from collections import deque
+import os
 from random import choice
+import sys
 import pygame
+
+# For asset loading
+def resource_path(relative_path):
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, relative_path)
+    return os.path.join(os.path.abspath("."), relative_path)
 
 # Initialize pygame
 WINDOW_WIDTH = 630
 WINDOW_HEIGHT = 696
+BOARD_CELLS = 21 # The number of squares in the board (both horizontally and vertically).
 DISPLAY_SCALE = 1.2
 TOP_MARGIN = 66
 pygame.init()
@@ -17,26 +26,26 @@ HIGH_SCORE_FILE = 'high_score.txt'
 overlay = pygame.Surface([WINDOW_WIDTH, WINDOW_HEIGHT], pygame.SRCALPHA, 32)
 overlay = overlay.convert_alpha()
 overlay.fill((0, 0, 0, 200))
-replay_btn = pygame.image.load('assets/buttons/replay_btn.png').convert_alpha()
-background = pygame.image.load('assets/background_image_1.png').convert()
-passenger = pygame.image.load('assets/passenger.png').convert_alpha()
-font = pygame.font.Font('assets/fonts/Fixedsys.ttf', 28)
-final_font = pygame.font.Font('assets/fonts/Fixedsys.ttf', 128)
+replay_btn = pygame.image.load(resource_path('assets/buttons/replay_btn.png')).convert_alpha()
+background = pygame.image.load(resource_path('assets/background_image_1.png')).convert()
+passenger = pygame.image.load(resource_path('assets/passenger.png')).convert_alpha()
+font = pygame.font.Font(resource_path('assets/fonts/Fixedsys.ttf'), 28)
+final_font = pygame.font.Font(resource_path('assets/fonts/Fixedsys.ttf'), 128)
 controls_map = {pygame.K_w: "UP", pygame.K_s: "DOWN", pygame.K_a: "LEFT", pygame.K_d: "RIGHT", pygame.K_UP: "UP", pygame.K_DOWN: "DOWN", pygame.K_LEFT: "LEFT", pygame.K_RIGHT: "RIGHT"}
 game_state = "stopped"
-images = [pygame.image.load('assets/train_car_imgs/first-car-right.png').convert_alpha(), #0
-          pygame.image.load('assets/train_car_imgs/mid-car-right.png').convert_alpha(), #1
-          pygame.image.load('assets/train_car_imgs/turn-car-right-up.png').convert_alpha(), #2
-          pygame.image.load('assets/train_car_imgs/turn-car-down-right.png').convert_alpha(), #3
-          pygame.image.load('assets/train_car_imgs/first-car-left.png').convert_alpha(), #4
-          pygame.image.load('assets/train_car_imgs/mid-car-left.png').convert_alpha(), #5
-          pygame.image.load('assets/train_car_imgs/first-car-top-up.png').convert_alpha(), #6
-          pygame.image.load('assets/train_car_imgs/mid-car-top-up.png').convert_alpha(), #7
-          pygame.image.load('assets/train_car_imgs/mid-car-top-down.png').convert_alpha(), #8
-          pygame.image.load('assets/train_car_imgs/first-car-top-down.png').convert_alpha(), #9
-          pygame.image.load('assets/train_car_imgs/mid-car-top-down.png').convert_alpha(), #10
-          pygame.image.load('assets/train_car_imgs/turn-car-up-right.png').convert_alpha(), #11
-          pygame.image.load('assets/train_car_imgs/turn-car-up-left.png').convert_alpha(),] #12
+images = [pygame.image.load(resource_path('assets/train_car_imgs/first-car-right.png')).convert_alpha(), #0
+          pygame.image.load(resource_path('assets/train_car_imgs/mid-car-right.png')).convert_alpha(), #1
+          pygame.image.load(resource_path('assets/train_car_imgs/turn-car-right-up.png')).convert_alpha(), #2
+          pygame.image.load(resource_path('assets/train_car_imgs/turn-car-down-right.png')).convert_alpha(), #3
+          pygame.image.load(resource_path('assets/train_car_imgs/first-car-left.png')).convert_alpha(), #4
+          pygame.image.load(resource_path('assets/train_car_imgs/mid-car-left.png')).convert_alpha(), #5
+          pygame.image.load(resource_path('assets/train_car_imgs/first-car-top-up.png')).convert_alpha(), #6
+          pygame.image.load(resource_path('assets/train_car_imgs/mid-car-top-up.png')).convert_alpha(), #7
+          pygame.image.load(resource_path('assets/train_car_imgs/mid-car-top-down.png')).convert_alpha(), #8
+          pygame.image.load(resource_path('assets/train_car_imgs/first-car-top-down.png')).convert_alpha(), #9
+          pygame.image.load(resource_path('assets/train_car_imgs/mid-car-top-down.png')).convert_alpha(), #10
+          pygame.image.load(resource_path('assets/train_car_imgs/turn-car-up-right.png')).convert_alpha(), #11
+          pygame.image.load(resource_path('assets/train_car_imgs/turn-car-up-left.png')).convert_alpha(),] #12
 
 # set the window title
 pygame.display.set_caption("Snake Game")
@@ -44,13 +53,15 @@ pygame.display.set_caption("Snake Game")
 class Snake:
     collided = False
     direction_queue = deque([])
-    length = 3
-    def __init__(self, size, init_pos_x, init_pos_y):
+
+    def __init__(self, size, init_pos_x, init_pos_y, initial_length = 3):
+        self.initial_length = initial_length
+        self.length = initial_length
         self.size = size
         self.init_pos_x = init_pos_x
         self.init_pos_y = init_pos_y
-        self.snake_arr = deque([pygame.Vector2(init_pos_x, init_pos_y + TOP_MARGIN), pygame.Vector2(init_pos_x - size, init_pos_y + TOP_MARGIN), pygame.Vector2(init_pos_x - size * 2, init_pos_y + TOP_MARGIN)])
-        self.snake_images = deque([{"dir": pygame.Vector2(size, 0), "img": images[0]}, {"dir": pygame.Vector2(size, 0), "img": images[1]}, {"dir": pygame.Vector2(size, 0), "img": images[4]}])
+        self.snake_arr = deque([])
+        self.snake_images = deque([])
         self.direction = pygame.Vector2(size, 0)
         self.direction_update = pygame.Vector2(size, 0)
         self.images_dictionary = {
@@ -75,6 +86,15 @@ class Snake:
             "LEFT_DOWN": images[11], # Turning car going left from downward direction.
             "RIGHT_DOWN": images[12], # Turning car going right from downward direction.
         }
+
+        for i in range(initial_length):
+            self.snake_arr.append(pygame.Vector2(self.init_pos_x - self.size * (i + 1), self.init_pos_y + TOP_MARGIN))
+            if i == 0:
+                self.snake_images.append({"dir": pygame.Vector2(self.size, 0), "img": images[0]})
+            elif i == initial_length - 1:
+                self.snake_images.append({"dir": pygame.Vector2(self.size, 0), "img": images[4]})
+            else:
+                self.snake_images.append({"dir": pygame.Vector2(self.size, 0), "img": images[1]})
 
     def check_direction(self, direction):
         directions = {(0, -self.size): "UP",
@@ -129,7 +149,7 @@ class Snake:
         elif self.snake_arr[0].y < TOP_MARGIN + self.size and self.direction.y < 0:
             new_head.y = WINDOW_HEIGHT - self.size
 
-        if new_head in self.snake_arr:
+        if new_head in list(self.snake_arr)[:-2]: # Check if the new head collides with the body of the snake.
             self.collided = True # Check if the snake collided with itself.
             return
 
@@ -238,7 +258,7 @@ if __name__ == "__main__":
 
         # Check if snake ate food.
         if snake.snake_arr[0] == food.food_pos:
-            random_food_pos = random_pos(1, 21, 30, snake.snake_arr)
+            random_food_pos = random_pos(1, BOARD_CELLS, 30, snake.snake_arr)
             food.changePos(random_food_pos.x, random_food_pos.y)
             snake.increase_length()
             score += 1
@@ -252,6 +272,10 @@ if __name__ == "__main__":
             game_state = "lost"
             high_score = update_high_score(high_score, score)
 
+        # Check for winning condition, which is when the snake is the same length as the area of the board
+        if len(snake.snake_arr) >= BOARD_CELLS ** 2: # 21 * 21 = 441
+            game_state = "won"
+
         # Display updates
         game_surface.fill('white')
         game_surface.blit(background, (0, TOP_MARGIN))
@@ -262,6 +286,11 @@ if __name__ == "__main__":
 
         if game_state == "lost":
             final_score = final_font.render(f'{score}', True, 'blue')
+            game_surface.blit(overlay, (0, 0))
+            game_surface.blit(replay_btn, (WINDOW_WIDTH / 2 - replay_btn.get_width() / 2, WINDOW_HEIGHT / 2))
+            game_surface.blit(final_score, final_score.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 - 125)))
+        elif game_state == "won":
+            final_score = final_font.render(f'YOU WIN!', True, 'green')
             game_surface.blit(overlay, (0, 0))
             game_surface.blit(replay_btn, (WINDOW_WIDTH / 2 - replay_btn.get_width() / 2, WINDOW_HEIGHT / 2))
             game_surface.blit(final_score, final_score.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 - 125)))
